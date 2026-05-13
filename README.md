@@ -26,29 +26,23 @@ go build -o chordpro ./cmd/chordpro
 chordpro [flags] [input.cho]
 
   -f, --format    text|html|pdf  output format (default: text)
-  -o, --output    FILE           write to FILE instead of stdout
+  -o, --output    FILE           output file (default: derived from input name)
   -t, --transpose N              shift chords by N semitones (may be negative)
       --no-style                 omit the default CSS in HTML output
 ```
 
-If no input file is given, ChordPro source is read from stdin.
+Output is always written to a file. Without `-o`, the output filename is
+derived from the input file's basename plus the format extension (`.txt`,
+`.html`, or `.pdf`), in the current working directory. When reading from stdin,
+`-o` is required.
 
-### Example
+### Examples
+
+Render `song.cho` to `song.txt` in the current directory:
 
 ```sh
 $ chordpro song.cho
-```
-
-```
-Swing Low
-=========
-Key: G
-
-[Chorus]
-      D          G     D
-Swing low, sweet chari-ot
-              A7       D
-Comin' for to carry me home.
+wrote /current/dir/song.txt
 ```
 
 Transpose up two semitones:
@@ -57,28 +51,22 @@ Transpose up two semitones:
 $ chordpro -t 2 song.cho
 ```
 
-```
-Swing Low
-=========
-Key: A
-
-[Chorus]
-      E          A     E
-Swing low, sweet chari-ot
-              B7       E
-Comin' for to carry me home.
-```
-
-Render to HTML:
+Render to HTML (lands at `song.html` in cwd):
 
 ```sh
-$ chordpro -f html song.cho > song.html
+$ chordpro -f html song.cho
 ```
 
 Render to PDF (A4, embedded Roboto Mono — no system-font dependency):
 
 ```sh
-$ chordpro -f pdf -o song.pdf song.cho
+$ chordpro -f pdf song.cho
+```
+
+Override the output path:
+
+```sh
+$ chordpro -f pdf -o /tmp/out.pdf song.cho
 ```
 
 ## Library

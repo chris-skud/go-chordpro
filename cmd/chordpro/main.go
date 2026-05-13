@@ -1,4 +1,8 @@
-// Command chordpro renders a ChordPro source file to text or HTML.
+// Command chordpro renders a ChordPro source file to text, HTML, or PDF.
+//
+// Output is always written to a file. If -o is not given, the output filename
+// is derived from the source file's basename plus the format's extension, in
+// the current working directory.
 package main
 
 import (
@@ -6,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/chris-skud/go-chordpro/parser"
 	"github.com/chris-skud/go-chordpro/render"
@@ -15,13 +21,32 @@ import (
 )
 
 func main() {
-	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "chordpro:", err)
+		os.Exit(1)
+	}
+	if err := run(os.Args[1:], cwd, os.Stdin, os.Stderr); err != nil {
 		fmt.Fprintln(os.Stderr, "chordpro:", err)
 		os.Exit(1)
 	}
 }
 
-func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+// extForFormat returns the canonical file extension for a format name.
+func extForFormat(format string) (string, error) {
+	switch format {
+	case "text", "txt":
+		return ".txt", nil
+	case "html":
+		return ".html", nil
+	case "pdf":
+		return ".pdf", nil
+	default:
+		return "", fmt.Errorf("unknown format %q (want text, html, or pdf)", format)
+	}
+}
+
+func run(args []string, cwd string, stdin io.Reader, stderr io.Writer) error {
 	fs := flag.NewFlagSet("chordpro", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 
@@ -33,7 +58,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	)
 	fs.StringVar(&format, "format", "text", "output format: text, html, or pdf")
 	fs.StringVar(&format, "f", "text", "output format (shorthand)")
-	fs.StringVar(&output, "output", "", "output file (default: stdout)")
+	fs.StringVar(&output, "output", "", "output file (default: derived from input name)")
 	fs.StringVar(&output, "o", "", "output file (shorthand)")
 	fs.BoolVar(&noStyle, "no-style", false, "omit default CSS (html only)")
 	fs.IntVar(&transpose, "transpose", 0, "transpose chords by N semitones (may be negative)")
@@ -41,7 +66,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 
 	fs.Usage = func() {
 		fmt.Fprintln(stderr, "usage: chordpro [flags] [input.cho]")
-		fmt.Fprintln(stderr, "  reads stdin if no input file is given.")
+		fmt.Fprintln(stderr, "  Without -o, writes <input-basename>.<ext> in the current directory.")
+		fmt.Fprintln(stderr, "  When reading from stdin, -o is required.")
 		fs.PrintDefaults()
 	}
 	// Parse in a loop so flags may appear before or after the positional
@@ -61,13 +87,22 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		remaining = rest[1:]
 	}
 
+	// Validate format up front so a typo doesn't waste a parse.
+	ext, err := extForFormat(format)
+	if err != nil {
+		return err
+	}
+
+	if len(positionals) > 1 {
+		return fmt.Errorf("expected at most one input file, got %d", len(positionals))
+	}
+
 	// Resolve input.
 	var src io.Reader = stdin
-	if len(positionals) > 0 {
-		if len(positionals) > 1 {
-			return fmt.Errorf("expected at most one input file, got %d", len(positionals))
-		}
-		f, err := os.Open(positionals[0])
+	var inputPath string
+	if len(positionals) == 1 {
+		inputPath = positionals[0]
+		f, err := os.Open(inputPath)
 		if err != nil {
 			return err
 		}
@@ -75,21 +110,26 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		src = f
 	}
 
+	// Resolve output path. With no -o, derive from the input basename.
+	if output == "" {
+		if inputPath == "" {
+			return fmt.Errorf("-o is required when reading from stdin")
+		}
+		base := filepath.Base(inputPath)
+		base = strings.TrimSuffix(base, filepath.Ext(base))
+		output = filepath.Join(cwd, base+ext)
+	}
+
 	song, err := parser.Parse(src)
 	if err != nil {
 		return fmt.Errorf("parse: %w", err)
 	}
 
-	// Resolve output.
-	var out io.Writer = stdout
-	if output != "" {
-		f, err := os.Create(output)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		out = f
+	outFile, err := os.Create(output)
+	if err != nil {
+		return err
 	}
+	defer outFile.Close()
 
 	opts := render.Options{Transpose: transpose, NoStyle: noStyle}
 	var r render.Renderer
@@ -100,8 +140,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		r = htmlrender.New(opts)
 	case "pdf":
 		r = pdfrender.New(opts)
-	default:
-		return fmt.Errorf("unknown format %q (want text, html, or pdf)", format)
 	}
-	return r.Render(out, song)
+	if err := r.Render(outFile, song); err != nil {
+		return err
+	}
+	fmt.Fprintln(stderr, "wrote", output)
+	return nil
 }
