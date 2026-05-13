@@ -2,10 +2,7 @@ module github.com/chris-skud/go-chordpro
 
 go 1.26.3
 
-require (
-	github.com/signintech/gopdf v0.36.0
-	golang.org/x/image v0.40.0
-)
+require github.com/signintech/gopdf v0.36.0
 
 require (
 	github.com/phpdave11/gofpdi v1.0.14-0.20211212211723-1f10f9844311 // indirect

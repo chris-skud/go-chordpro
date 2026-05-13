@@ -75,7 +75,7 @@ Render to HTML:
 $ chordpro -f html song.cho > song.html
 ```
 
-Render to PDF (A4, embedded Go fonts — no system-font dependency):
+Render to PDF (A4, embedded Roboto Mono — no system-font dependency):
 
 ```sh
 $ chordpro -f pdf -o song.pdf song.cho
@@ -127,7 +127,7 @@ and future renderers can handle them.
 - `render` — common `Renderer` interface and `Options`
 - `render/text` — chord-over-lyric plain-text renderer
 - `render/html` — standalone HTML5 renderer with optional embedded CSS
-- `render/pdf` — PDF renderer (A4) with embedded Go fonts
+- `render/pdf` — PDF renderer (A4) with embedded Roboto Mono
 - `cmd/chordpro` — CLI
 
 ## Status / out of scope
@@ -144,3 +144,7 @@ Not implemented (yet):
 ## License
 
 MIT (or as configured by the repo).
+
+The PDF renderer embeds [Roboto Mono](https://fonts.google.com/specimen/Roboto+Mono)
+by Christian Robertson under the SIL Open Font License 1.1
+(`render/pdf/fonts/OFL.txt`).

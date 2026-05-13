@@ -1,33 +1,40 @@
 // Package pdf renders an ast.Song as a PDF document using gopdf.
 //
-// The renderer embeds Go fonts (Bigelow & Holmes' "Go" family from
-// golang.org/x/image/font/gofont) so output is self-contained — no system
-// fonts required.
+// The renderer embeds Roboto Mono (SIL Open Font License) so output is
+// self-contained — no system fonts required. The whole document is set in
+// monospace, which suits chord-over-lyric alignment.
 package pdf
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/signintech/gopdf"
-	"golang.org/x/image/font/gofont/gobold"
-	"golang.org/x/image/font/gofont/goitalic"
-	"golang.org/x/image/font/gofont/gomono"
-	"golang.org/x/image/font/gofont/goregular"
 
 	"github.com/chris-skud/go-chordpro/ast"
 	"github.com/chris-skud/go-chordpro/chord"
 	"github.com/chris-skud/go-chordpro/render"
 )
 
-// Font family names registered with gopdf.
+//go:embed fonts/RobotoMono-Regular.ttf
+var robotoMonoRegular []byte
+
+//go:embed fonts/RobotoMono-Bold.ttf
+var robotoMonoBold []byte
+
+//go:embed fonts/RobotoMono-Italic.ttf
+var robotoMonoItalic []byte
+
+// Font family names registered with gopdf. Roboto Mono is monospaced so the
+// "mono" face used for tabs is the same as the regular face.
 const (
-	fontRegular = "go-regular"
-	fontBold    = "go-bold"
-	fontItalic  = "go-italic"
-	fontMono    = "go-mono"
+	fontRegular = "roboto-mono"
+	fontBold    = "roboto-mono-bold"
+	fontItalic  = "roboto-mono-italic"
+	fontMono    = "roboto-mono"
 )
 
 // Layout constants (all units are PDF points: 72pt = 1 inch).
@@ -107,16 +114,15 @@ func (r *Renderer) Render(w io.Writer, song *ast.Song) error {
 	return err
 }
 
-// installFonts registers the embedded Go fonts with the PDF.
+// installFonts registers the embedded Roboto Mono faces with the PDF.
 func installFonts(pdf *gopdf.GoPdf) error {
 	fonts := []struct {
 		name string
 		data []byte
 	}{
-		{fontRegular, goregular.TTF},
-		{fontBold, gobold.TTF},
-		{fontItalic, goitalic.TTF},
-		{fontMono, gomono.TTF},
+		{fontRegular, robotoMonoRegular},
+		{fontBold, robotoMonoBold},
+		{fontItalic, robotoMonoItalic},
 	}
 	for _, f := range fonts {
 		if err := pdf.AddTTFFontByReader(f.name, bytes.NewReader(f.data)); err != nil {
