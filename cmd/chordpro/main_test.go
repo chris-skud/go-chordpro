@@ -75,6 +75,25 @@ func TestCLITranspose(t *testing.T) {
 	}
 }
 
+func TestCLIFlagsAfterInputFile(t *testing.T) {
+	dir := t.TempDir()
+	in := filepath.Join(dir, "song.cho")
+	if err := os.WriteFile(in, []byte("{title: Hi}\n[C]hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	// Flags appear after the positional input path — must still work.
+	if err := run([]string{in, "-f", "text", "-t", "2"}, nil, &out, &errOut); err != nil {
+		t.Fatalf("run: %v; stderr=%s", err, errOut.String())
+	}
+	if !strings.Contains(out.String(), "Hi") {
+		t.Errorf("expected title in output:\n%s", out.String())
+	}
+	if strings.Contains(out.String(), "[C]") {
+		t.Errorf("transpose flag not honored (chord untransposed):\n%s", out.String())
+	}
+}
+
 func TestCLIBadFormat(t *testing.T) {
 	var out, errOut bytes.Buffer
 	if err := run([]string{"-f", "pdf"}, strings.NewReader(""), &out, &errOut); err == nil {

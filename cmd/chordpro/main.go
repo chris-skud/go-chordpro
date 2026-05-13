@@ -43,17 +43,30 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		fmt.Fprintln(stderr, "  reads stdin if no input file is given.")
 		fs.PrintDefaults()
 	}
-	if err := fs.Parse(args); err != nil {
-		return err
+	// Parse in a loop so flags may appear before or after the positional
+	// input path. flag.Parse stops at the first non-flag; we collect it and
+	// continue with the remainder.
+	var positionals []string
+	remaining := args
+	for len(remaining) > 0 {
+		if err := fs.Parse(remaining); err != nil {
+			return err
+		}
+		rest := fs.Args()
+		if len(rest) == 0 {
+			break
+		}
+		positionals = append(positionals, rest[0])
+		remaining = rest[1:]
 	}
 
 	// Resolve input.
 	var src io.Reader = stdin
-	if rest := fs.Args(); len(rest) > 0 {
-		if len(rest) > 1 {
-			return fmt.Errorf("expected at most one input file, got %d", len(rest))
+	if len(positionals) > 0 {
+		if len(positionals) > 1 {
+			return fmt.Errorf("expected at most one input file, got %d", len(positionals))
 		}
-		f, err := os.Open(rest[0])
+		f, err := os.Open(positionals[0])
 		if err != nil {
 			return err
 		}
