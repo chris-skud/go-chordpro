@@ -94,9 +94,29 @@ func TestCLIFlagsAfterInputFile(t *testing.T) {
 	}
 }
 
+func TestCLIPDF(t *testing.T) {
+	dir := t.TempDir()
+	in := filepath.Join(dir, "song.cho")
+	if err := os.WriteFile(in, []byte(sample), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "song.pdf")
+	var stdout, stderr bytes.Buffer
+	if err := run([]string{"-f", "pdf", "-o", out, in}, nil, &stdout, &stderr); err != nil {
+		t.Fatalf("run: %v; stderr=%s", err, stderr.String())
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.HasPrefix(data, []byte("%PDF-")) {
+		t.Errorf("output is not a PDF (first bytes: %q)", data[:8])
+	}
+}
+
 func TestCLIBadFormat(t *testing.T) {
 	var out, errOut bytes.Buffer
-	if err := run([]string{"-f", "pdf"}, strings.NewReader(""), &out, &errOut); err == nil {
+	if err := run([]string{"-f", "latex"}, strings.NewReader(""), &out, &errOut); err == nil {
 		t.Errorf("expected error for unknown format")
 	}
 }

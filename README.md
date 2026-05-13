@@ -2,11 +2,11 @@
 
 A Go port of the [ChordPro](https://www.chordpro.org/) lead-sheet processor.
 Parses ChordPro source into an AST and renders to plain text (chords above
-lyrics) or HTML.
+lyrics), HTML, or PDF.
 
 This is an MVP: it covers the format's metadata, sections, inline chords and
-annotations, comments, tabs, and transposition. PDF, chord diagrams, custom
-chord definitions, and multi-column layout are not implemented.
+annotations, comments, tabs, and transposition. Chord diagrams, custom chord
+definitions, and multi-column layout are not implemented.
 
 ## Install
 
@@ -25,7 +25,7 @@ go build -o chordpro ./cmd/chordpro
 ```
 chordpro [flags] [input.cho]
 
-  -f, --format    text|html      output format (default: text)
+  -f, --format    text|html|pdf  output format (default: text)
   -o, --output    FILE           write to FILE instead of stdout
   -t, --transpose N              shift chords by N semitones (may be negative)
       --no-style                 omit the default CSS in HTML output
@@ -75,6 +75,12 @@ Render to HTML:
 $ chordpro -f html song.cho > song.html
 ```
 
+Render to PDF (A4, embedded Go fonts — no system-font dependency):
+
+```sh
+$ chordpro -f pdf -o song.pdf song.cho
+```
+
 ## Library
 
 ```go
@@ -121,15 +127,16 @@ and future renderers can handle them.
 - `render` — common `Renderer` interface and `Options`
 - `render/text` — chord-over-lyric plain-text renderer
 - `render/html` — standalone HTML5 renderer with optional embedded CSS
+- `render/pdf` — PDF renderer (A4) with embedded Go fonts
 - `cmd/chordpro` — CLI
 
 ## Status / out of scope
 
 Not implemented (yet):
 
-- PDF / LaTeX output
+- LaTeX output
 - Chord diagram rendering and `{define}`
-- Multi-column layout, page breaks
+- Multi-column PDF layout, configurable paper size, custom fonts
 - Configuration files / templates
 - Pango-style inline markup
 - Capo math beyond preserving the `capo:` value in metadata

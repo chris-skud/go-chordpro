@@ -10,6 +10,7 @@ import (
 	"github.com/chris-skud/go-chordpro/parser"
 	"github.com/chris-skud/go-chordpro/render"
 	htmlrender "github.com/chris-skud/go-chordpro/render/html"
+	pdfrender "github.com/chris-skud/go-chordpro/render/pdf"
 	textrender "github.com/chris-skud/go-chordpro/render/text"
 )
 
@@ -30,7 +31,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		noStyle   bool
 		transpose int
 	)
-	fs.StringVar(&format, "format", "text", "output format: text or html")
+	fs.StringVar(&format, "format", "text", "output format: text, html, or pdf")
 	fs.StringVar(&format, "f", "text", "output format (shorthand)")
 	fs.StringVar(&output, "output", "", "output file (default: stdout)")
 	fs.StringVar(&output, "o", "", "output file (shorthand)")
@@ -97,8 +98,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		r = textrender.New(opts)
 	case "html":
 		r = htmlrender.New(opts)
+	case "pdf":
+		r = pdfrender.New(opts)
 	default:
-		return fmt.Errorf("unknown format %q (want text or html)", format)
+		return fmt.Errorf("unknown format %q (want text, html, or pdf)", format)
 	}
 	return r.Render(out, song)
 }
