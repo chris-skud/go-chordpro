@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>chordpro</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header>
+    <h1>chordpro</h1>
+    <div class="actions">
+      <label class="file-button">
+        Open…
+        <input id="file" type="file" accept=".cho,.chopro,.pro,.crd,.chord,text/plain">
+      </label>
+      <span id="filename" class="filename">untitled</span>
+      <div class="transpose">
+        <button id="transpose-down" title="Transpose down">−</button>
+        <span id="transpose-val">0</span>
+        <button id="transpose-up" title="Transpose up">+</button>
+      </div>
+      <select id="format" title="Download format">
+        <option value="pdf">PDF</option>
+        <option value="html">HTML</option>
+        <option value="text">Text</option>
+      </select>
+      <button id="download">Download</button>
+    </div>
+  </header>
+  <main>
+    <textarea id="source" spellcheck="false" placeholder="Paste a ChordPro song or click Open…"></textarea>
+    <iframe id="preview" title="preview"></iframe>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

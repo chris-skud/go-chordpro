@@ -1,0 +1,101 @@
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, sans-serif; color: #222; }
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+  height: 48px;
+}
+header h1 { margin: 0; font-size: 1rem; font-weight: 600; color: #555; }
+
+.actions { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+
+.filename { color: #777; font-size: 0.85rem; font-style: italic; max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.file-button {
+  cursor: pointer;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.85rem;
+}
+.file-button:hover { background: #f0f0f0; }
+.file-button input { display: none; }
+
+.transpose {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  overflow: hidden;
+}
+.transpose button {
+  border: none;
+  background: transparent;
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #555;
+}
+.transpose button:hover { background: #f0f0f0; }
+.transpose span {
+  min-width: 1.8rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+select, button {
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+button:hover, select:hover { background: #f0f0f0; }
+#download { background: #2563eb; color: white; border-color: #2563eb; }
+#download:hover { background: #1d4ed8; }
+
+main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: calc(100% - 48px);
+}
+
+#source {
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  border: none;
+  border-right: 1px solid #ddd;
+  resize: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  outline: none;
+  background: #fff;
+  color: #222;
+}
+
+#preview {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+@media (max-width: 720px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  #source { border-right: none; border-bottom: 1px solid #ddd; }
+  .filename { display: none; }
+}

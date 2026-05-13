@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chris-skud/go-chordpro/internal/server"
 	"github.com/chris-skud/go-chordpro/parser"
 	"github.com/chris-skud/go-chordpro/render"
 	htmlrender "github.com/chris-skud/go-chordpro/render/html"
@@ -21,6 +22,15 @@ import (
 )
 
 func main() {
+	// Subcommand dispatch: `chordpro serve` launches the web UI; everything
+	// else is the render flow (preserving the original CLI contract).
+	if len(os.Args) > 1 && os.Args[1] == "serve" {
+		if err := serveCmd(os.Args[2:], os.Stderr); err != nil {
+			fmt.Fprintln(os.Stderr, "chordpro:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "chordpro:", err)
@@ -30,6 +40,23 @@ func main() {
 		fmt.Fprintln(os.Stderr, "chordpro:", err)
 		os.Exit(1)
 	}
+}
+
+// serveCmd parses serve-subcommand flags and starts the embedded web server.
+func serveCmd(args []string, stderr io.Writer) error {
+	fs := flag.NewFlagSet("chordpro serve", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	var addr string
+	fs.StringVar(&addr, "addr", "127.0.0.1:8080", "address to listen on (host:port)")
+	fs.Usage = func() {
+		fmt.Fprintln(stderr, "usage: chordpro serve [--addr host:port]")
+		fmt.Fprintln(stderr, "  Starts the local web editor. Defaults to 127.0.0.1:8080.")
+		fs.PrintDefaults()
+	}
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	return server.Run(server.Config{Addr: addr})
 }
 
 // extForFormat returns the canonical file extension for a format name.

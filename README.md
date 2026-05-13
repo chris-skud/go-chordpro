@@ -69,6 +69,31 @@ Override the output path:
 $ chordpro -f pdf -o /tmp/out.pdf song.cho
 ```
 
+### Web UI
+
+`chordpro serve` starts a local web editor with a textarea and a live HTML
+preview. The HTML, CSS, and JS are embedded in the binary, so no separate
+assets need to be deployed.
+
+```sh
+$ chordpro serve
+chordpro web UI: http://127.0.0.1:8080/
+```
+
+Defaults to `127.0.0.1` (loopback only). Use `--addr 0.0.0.0:8080` to expose
+on the network — only do that on a trusted network, since the render endpoint
+accepts arbitrary ChordPro source.
+
+Features:
+
+- Drag/open a `.cho` file or paste source into the editor
+- Live HTML preview, debounced
+- Transpose ± buttons (semitones)
+- Download as text, HTML, or PDF using the format dropdown
+
+There is no server-side filesystem coupling: opening a file uses the browser's
+file input, saving uses the browser's download flow.
+
 ## Library
 
 ```go
@@ -116,7 +141,8 @@ and future renderers can handle them.
 - `render/text` — chord-over-lyric plain-text renderer
 - `render/html` — standalone HTML5 renderer with optional embedded CSS
 - `render/pdf` — PDF renderer (A4) with embedded Roboto Mono
-- `cmd/chordpro` — CLI
+- `internal/server` — embedded web editor (HTML/CSS/JS + `/api/render`)
+- `cmd/chordpro` — CLI and `serve` subcommand
 
 ## Status / out of scope
 
