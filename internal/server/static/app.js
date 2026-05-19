@@ -8,9 +8,17 @@
   const tVal = document.getElementById('transpose-val');
   const formatSel = document.getElementById('format');
   const downloadBtn = document.getElementById('download');
+  const saveBtn = document.getElementById('save');
 
   let transpose = 0;
   let baseName = 'song';
+  // FileSystemFileHandle from showOpenFilePicker / showSaveFilePicker, when
+  // supported. Lets Save overwrite the original file without a dialog.
+  let fileHandle = null;
+  const chordproTypes = [{
+    description: 'ChordPro',
+    accept: { 'text/plain': ['.cho', '.chopro', '.pro', '.crd', '.chord'] },
+  }];
 
   const setTranspose = (n) => {
     transpose = n;
@@ -24,11 +32,34 @@
   fileInput.addEventListener('change', async (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    // Plain <input type="file"> gives us bytes but no writable handle, so
+    // a later Save will need to round-trip through a save-as dialog.
+    fileHandle = null;
     baseName = f.name.replace(/\.[^/.]+$/, '') || 'song';
     filenameLabel.textContent = f.name;
     source.value = await f.text();
     schedulePreview();
   });
+
+  // Prefer showOpenFilePicker when available — it returns a handle we can
+  // write back to without prompting the user for a destination.
+  if (window.showOpenFilePicker) {
+    const label = fileInput.closest('label');
+    label.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const [handle] = await window.showOpenFilePicker({ types: chordproTypes });
+        const f = await handle.getFile();
+        fileHandle = handle;
+        baseName = f.name.replace(/\.[^/.]+$/, '') || 'song';
+        filenameLabel.textContent = f.name;
+        source.value = await f.text();
+        schedulePreview();
+      } catch (err) {
+        if (err && err.name !== 'AbortError') alert('Open failed: ' + err);
+      }
+    });
+  }
 
   let previewTimer;
   source.addEventListener('input', schedulePreview);
@@ -59,6 +90,44 @@
     const safe = msg.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     return `<!doctype html><html><body style="font-family:system-ui;padding:1rem;color:#900;"><pre style="white-space:pre-wrap;">${safe}</pre></body></html>`;
   }
+
+  saveBtn.addEventListener('click', async () => {
+    try {
+      if (fileHandle) {
+        const w = await fileHandle.createWritable();
+        await w.write(source.value);
+        await w.close();
+        return;
+      }
+      if (window.showSaveFilePicker) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: baseName + '.cho',
+          types: chordproTypes,
+        });
+        const w = await handle.createWritable();
+        await w.write(source.value);
+        await w.close();
+        fileHandle = handle;
+        const fname = handle.name || (baseName + '.cho');
+        baseName = fname.replace(/\.[^/.]+$/, '') || baseName;
+        filenameLabel.textContent = fname;
+        return;
+      }
+      // Browser without File System Access API — fall back to download.
+      const blob = new Blob([source.value], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = baseName + '.cho';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('Save failed: ' + e);
+    }
+  });
 
   downloadBtn.addEventListener('click', async () => {
     const fmt = formatSel.value;
