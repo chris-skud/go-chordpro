@@ -9,16 +9,47 @@
   const formatSel = document.getElementById('format');
   const downloadBtn = document.getElementById('download');
   const saveBtn = document.getElementById('save');
+  const saveStatus = document.getElementById('save-status');
 
   let transpose = 0;
   let baseName = 'song';
   // FileSystemFileHandle from showOpenFilePicker / showSaveFilePicker, when
   // supported. Lets Save overwrite the original file without a dialog.
   let fileHandle = null;
+  // Display name of the current file and the source text as of the last
+  // open/save, used to show an unsaved-changes marker next to the name.
+  let fileName = 'untitled';
+  let savedText = '';
   const chordproTypes = [{
     description: 'ChordPro',
     accept: { 'text/plain': ['.cho', '.chopro', '.pro', '.crd', '.chord'] },
   }];
+
+  function updateDirty() {
+    const dirty = source.value !== savedText;
+    filenameLabel.textContent = fileName + (dirty ? ' •' : '');
+    filenameLabel.title = dirty ? 'Unsaved changes' : '';
+  }
+
+  function loadFile(name, text) {
+    fileName = name;
+    baseName = name.replace(/\.[^/.]+$/, '') || 'song';
+    source.value = text;
+    savedText = text;
+    updateDirty();
+    schedulePreview();
+  }
+
+  let statusTimer;
+  function markSaved(name) {
+    fileName = name;
+    savedText = source.value;
+    updateDirty();
+    saveStatus.textContent = 'Saved';
+    saveStatus.classList.add('visible');
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => saveStatus.classList.remove('visible'), 1500);
+  }
 
   const setTranspose = (n) => {
     transpose = n;
@@ -35,10 +66,7 @@
     // Plain <input type="file"> gives us bytes but no writable handle, so
     // a later Save will need to round-trip through a save-as dialog.
     fileHandle = null;
-    baseName = f.name.replace(/\.[^/.]+$/, '') || 'song';
-    filenameLabel.textContent = f.name;
-    source.value = await f.text();
-    schedulePreview();
+    loadFile(f.name, await f.text());
   });
 
   // Prefer showOpenFilePicker when available — it returns a handle we can
@@ -51,10 +79,7 @@
         const [handle] = await window.showOpenFilePicker({ types: chordproTypes });
         const f = await handle.getFile();
         fileHandle = handle;
-        baseName = f.name.replace(/\.[^/.]+$/, '') || 'song';
-        filenameLabel.textContent = f.name;
-        source.value = await f.text();
-        schedulePreview();
+        loadFile(f.name, await f.text());
       } catch (err) {
         if (err && err.name !== 'AbortError') alert('Open failed: ' + err);
       }
@@ -62,7 +87,10 @@
   }
 
   let previewTimer;
-  source.addEventListener('input', schedulePreview);
+  source.addEventListener('input', () => {
+    updateDirty();
+    schedulePreview();
+  });
   function schedulePreview() {
     clearTimeout(previewTimer);
     previewTimer = setTimeout(renderPreview, 250);
@@ -91,12 +119,13 @@
     return `<!doctype html><html><body style="font-family:system-ui;padding:1rem;color:#900;"><pre style="white-space:pre-wrap;">${safe}</pre></body></html>`;
   }
 
-  saveBtn.addEventListener('click', async () => {
+  async function save() {
     try {
       if (fileHandle) {
         const w = await fileHandle.createWritable();
         await w.write(source.value);
         await w.close();
+        markSaved(fileHandle.name || fileName);
         return;
       }
       if (window.showSaveFilePicker) {
@@ -110,7 +139,7 @@
         fileHandle = handle;
         const fname = handle.name || (baseName + '.cho');
         baseName = fname.replace(/\.[^/.]+$/, '') || baseName;
-        filenameLabel.textContent = fname;
+        markSaved(fname);
         return;
       }
       // Browser without File System Access API — fall back to download.
@@ -123,9 +152,18 @@
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      markSaved(baseName + '.cho');
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       alert('Save failed: ' + e);
+    }
+  }
+
+  saveBtn.addEventListener('click', save);
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      save();
     }
   });
 
@@ -166,5 +204,6 @@
 [C]Type to [G]edit and the [F]preview [C]updates
 {end_of_chorus}
 `;
+  savedText = source.value;
   renderPreview();
 })();

@@ -16,6 +16,9 @@ header h1 { margin: 0; font-size: 1rem; font-weight: 600; color: #555; }
 
 .filename { color: #777; font-size: 0.85rem; font-style: italic; max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+.save-status { color: #16a34a; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; }
+.save-status.visible { opacity: 1; }
+
 .file-button {
   cursor: pointer;
   padding: 0.3rem 0.7rem;

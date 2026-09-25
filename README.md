@@ -89,7 +89,7 @@ Features:
 - Open a `.cho` file or paste source into the editor
 - Live HTML preview, debounced
 - Transpose ± buttons (semitones)
-- Save the edited `.cho` source back to the file it was opened from
+- Save the edited `.cho` source back to the file it was opened from (⌘S / Ctrl+S); a `•` after the filename marks unsaved changes
 - Download as text, HTML, or PDF using the format dropdown
 
 There is no server-side filesystem coupling: all file access happens in the
