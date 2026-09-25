@@ -86,13 +86,19 @@ accepts arbitrary ChordPro source.
 
 Features:
 
-- Drag/open a `.cho` file or paste source into the editor
+- Open a `.cho` file or paste source into the editor
 - Live HTML preview, debounced
 - Transpose ± buttons (semitones)
+- Save the edited `.cho` source back to the file it was opened from
 - Download as text, HTML, or PDF using the format dropdown
 
-There is no server-side filesystem coupling: opening a file uses the browser's
-file input, saving uses the browser's download flow.
+There is no server-side filesystem coupling: all file access happens in the
+browser. In Chromium-based browsers (Chrome, Edge, Arc) Open and Save use the
+[File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API),
+so Save overwrites the opened file in place (the browser asks for write
+permission on the first save). If no file is open, Save prompts for a
+location. Browsers without the API (Firefox, Safari) fall back to a regular
+file input for Open and a `.cho` download for Save.
 
 ## Library
 
