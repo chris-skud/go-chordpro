@@ -69,6 +69,40 @@ button:hover, select:hover { background: #f0f0f0; }
 #download { background: #2563eb; color: white; border-color: #2563eb; }
 #download:hover { background: #1d4ed8; }
 
+.perform-view {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #fff;
+}
+.perform-view[hidden] { display: none; }
+#perform-frame { width: 100%; height: 100%; border: none; display: block; }
+.perform-bar {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: rgba(250, 250, 250, 0.92);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+.perform-bar:hover, .perform-bar:focus-within, .perform-view.paused .perform-bar { opacity: 1; }
+.perform-tempo { font-size: 0.85rem; color: #555; }
+.perform-tempo input { width: 4rem; padding: 0.25rem; font: inherit; border: 1px solid #ccc; border-radius: 4px; }
+.perform-font { display: inline-flex; gap: 0.25rem; }
+
+.perform-view.dark { background: #111; }
+.perform-view.dark .perform-bar { background: rgba(30, 30, 30, 0.92); border-color: #444; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.perform-view.dark .perform-tempo { color: #bbb; }
+.perform-view.dark button, .perform-view.dark select, .perform-view.dark .perform-tempo input { background: #222; color: #ddd; border-color: #555; }
+.perform-view.dark button:hover, .perform-view.dark select:hover { background: #333; }
+
 main {
   display: grid;
   grid-template-columns: 1fr 1fr;

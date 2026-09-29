@@ -51,6 +51,21 @@ func TestStaticAssetsServed(t *testing.T) {
 	}
 }
 
+func TestUINotCached(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+	for _, path := range []string{"/", "/static/app.js", "/static/app.css"} {
+		resp, err := http.Get(ts.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if cc := resp.Header.Get("Cache-Control"); cc != "no-cache" {
+			t.Errorf("%s -> Cache-Control %q, want no-cache", path, cc)
+		}
+	}
+}
+
 func TestRenderHTML(t *testing.T) {
 	ts := newTestServer(t)
 	defer ts.Close()

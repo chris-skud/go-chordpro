@@ -91,6 +91,12 @@ Features:
 - Transpose ± buttons (semitones)
 - Save the edited `.cho` source back to the file it was opened from (⌘S / Ctrl+S); a `•` after the filename marks unsaved changes
 - Download as text, HTML, or PDF using the format dropdown
+- Perform mode: full-screen view that auto-scrolls at the song's `{tempo}`
+  (default 100 BPM, adjustable), assuming one lyric line per bar of `{time}`
+  (default 4/4). The Columns layout sets the song side by side so short songs
+  fit on one screen; Scroll is a single column. Light and dark themes
+  (following the system theme by default). Space plays/pauses, `+`/`-`
+  resize text, `D` toggles dark mode, Esc exits
 
 There is no server-side filesystem coupling: all file access happens in the
 browser. In Chromium-based browsers (Chrome, Edge, Arc) Open and Save use the

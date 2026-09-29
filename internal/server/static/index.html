@@ -28,12 +28,32 @@
         <option value="text">Text</option>
       </select>
       <button id="download">Download</button>
+      <button id="perform" title="Full-screen view with auto-scroll">Perform</button>
     </div>
   </header>
   <main>
     <textarea id="source" spellcheck="false" placeholder="Paste a ChordPro song or click Open…"></textarea>
     <iframe id="preview" title="preview"></iframe>
   </main>
+  <div id="perform-view" class="perform-view" hidden>
+    <iframe id="perform-frame" title="perform"></iframe>
+    <div class="perform-bar">
+      <button id="perform-play" title="Play / pause (Space)">Play</button>
+      <label class="perform-tempo" title="Scroll speed assumes one line per bar">
+        <input id="perform-bpm" type="number" min="20" max="400" step="1" value="100"> BPM
+      </label>
+      <select id="perform-layout" title="Layout">
+        <option value="columns">Columns</option>
+        <option value="scroll">Scroll</option>
+      </select>
+      <div class="perform-font">
+        <button id="perform-smaller" title="Smaller text (−)">A−</button>
+        <button id="perform-bigger" title="Larger text (+)">A+</button>
+      </div>
+      <button id="perform-theme" title="Toggle light / dark (D)">Dark</button>
+      <button id="perform-exit" title="Exit (Esc)">Exit</button>
+    </div>
+  </div>
   <script src="/static/app.js"></script>
 </body>
 </html>

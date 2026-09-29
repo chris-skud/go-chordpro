@@ -49,10 +49,20 @@ func Handler() http.Handler {
 		// a runtime error.
 		panic(err)
 	}
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
-	mux.HandleFunc("/", indexHandler(sub))
+	mux.Handle("/static/", noCache(http.StripPrefix("/static/", http.FileServer(http.FS(sub)))))
+	mux.Handle("/", noCache(indexHandler(sub)))
 	mux.HandleFunc("/api/render", renderHandler)
 	return mux
+}
+
+// noCache makes browsers revalidate the embedded UI on every load, so a
+// rebuilt binary's HTML/CSS/JS is picked up without a hard refresh. Embedded
+// files carry no modification time, so there is no validator to lean on.
+func noCache(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache")
+		h.ServeHTTP(w, r)
+	})
 }
 
 // indexHandler serves the embedded index.html for the root path. Other paths
