@@ -106,6 +106,28 @@ permission on the first save). If no file is open, Save prompts for a
 location. Browsers without the API (Firefox, Safari) fall back to a regular
 file input for Open and a `.cho` download for Save.
 
+### Offline web app (PWA)
+
+The same UI can also be built as a static site that runs with no server and
+works offline, e.g. on a tablet at a gig with no wifi. Songs are rendered in
+the browser by the Go renderers compiled to WebAssembly, and a service worker
+caches the whole app on first visit.
+
+```sh
+$ scripts/build-site.sh            # builds into dist/
+$ python3 -m http.server -d dist 8000
+```
+
+Service workers need https or `localhost`. Pushes to `main` publish `dist/`
+to GitHub Pages via `.github/workflows/pages.yml` (one-time setup: Settings →
+Pages → Source: "GitHub Actions").
+
+To install, open the site once while online, then use "Add to Home Screen"
+(iOS/iPadOS Safari) or the install button in the address bar (Chrome/Edge).
+After that it launches full-screen from its icon and works in airplane mode.
+A new version downloads in the background when you're online and takes over
+the next time the app is launched, never mid-session.
+
 ## Library
 
 ```go
@@ -153,8 +175,10 @@ and future renderers can handle them.
 - `render/text` — chord-over-lyric plain-text renderer
 - `render/html` — standalone HTML5 renderer with optional embedded CSS
 - `render/pdf` — PDF renderer (A4) with embedded Roboto Mono
+- `render/formats` — maps format names (`text`, `html`, `pdf`) to renderers
 - `internal/server` — embedded web editor (HTML/CSS/JS + `/api/render`)
 - `cmd/chordpro` — CLI and `serve` subcommand
+- `cmd/chordpro-wasm` — WebAssembly build of the renderers for the offline web app
 
 ## Status / out of scope
 

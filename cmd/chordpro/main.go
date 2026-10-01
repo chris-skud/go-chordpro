@@ -16,9 +16,7 @@ import (
 	"github.com/chris-skud/go-chordpro/internal/server"
 	"github.com/chris-skud/go-chordpro/parser"
 	"github.com/chris-skud/go-chordpro/render"
-	htmlrender "github.com/chris-skud/go-chordpro/render/html"
-	pdfrender "github.com/chris-skud/go-chordpro/render/pdf"
-	textrender "github.com/chris-skud/go-chordpro/render/text"
+	"github.com/chris-skud/go-chordpro/render/formats"
 )
 
 func main() {
@@ -57,20 +55,6 @@ func serveCmd(args []string, stderr io.Writer) error {
 		return err
 	}
 	return server.Run(server.Config{Addr: addr})
-}
-
-// extForFormat returns the canonical file extension for a format name.
-func extForFormat(format string) (string, error) {
-	switch format {
-	case "text", "txt":
-		return ".txt", nil
-	case "html":
-		return ".html", nil
-	case "pdf":
-		return ".pdf", nil
-	default:
-		return "", fmt.Errorf("unknown format %q (want text, html, or pdf)", format)
-	}
 }
 
 func run(args []string, cwd string, stdin io.Reader, stderr io.Writer) error {
@@ -115,7 +99,7 @@ func run(args []string, cwd string, stdin io.Reader, stderr io.Writer) error {
 	}
 
 	// Validate format up front so a typo doesn't waste a parse.
-	ext, err := extForFormat(format)
+	fmtInfo, err := formats.Lookup(format)
 	if err != nil {
 		return err
 	}
@@ -144,7 +128,7 @@ func run(args []string, cwd string, stdin io.Reader, stderr io.Writer) error {
 		}
 		base := filepath.Base(inputPath)
 		base = strings.TrimSuffix(base, filepath.Ext(base))
-		output = filepath.Join(cwd, base+ext)
+		output = filepath.Join(cwd, base+"."+fmtInfo.Ext)
 	}
 
 	song, err := parser.Parse(src)
@@ -159,16 +143,7 @@ func run(args []string, cwd string, stdin io.Reader, stderr io.Writer) error {
 	defer outFile.Close()
 
 	opts := render.Options{Transpose: transpose, NoStyle: noStyle}
-	var r render.Renderer
-	switch format {
-	case "text", "txt":
-		r = textrender.New(opts)
-	case "html":
-		r = htmlrender.New(opts)
-	case "pdf":
-		r = pdfrender.New(opts)
-	}
-	if err := r.Render(outFile, song); err != nil {
+	if err := fmtInfo.New(opts).Render(outFile, song); err != nil {
 		return err
 	}
 	fmt.Fprintln(stderr, "wrote", output)

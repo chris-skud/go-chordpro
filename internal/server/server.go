@@ -15,9 +15,7 @@ import (
 
 	"github.com/chris-skud/go-chordpro/parser"
 	"github.com/chris-skud/go-chordpro/render"
-	htmlrender "github.com/chris-skud/go-chordpro/render/html"
-	pdfrender "github.com/chris-skud/go-chordpro/render/pdf"
-	textrender "github.com/chris-skud/go-chordpro/render/text"
+	"github.com/chris-skud/go-chordpro/render/formats"
 )
 
 //go:embed static
@@ -120,36 +118,18 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opts := render.Options{Transpose: transpose}
-	var (
-		renderer    render.Renderer
-		contentType string
-		ext         string
-	)
-	switch format {
-	case "text", "txt":
-		renderer = textrender.New(opts)
-		contentType = "text/plain; charset=utf-8"
-		ext = "txt"
-	case "html":
-		renderer = htmlrender.New(opts)
-		contentType = "text/html; charset=utf-8"
-		ext = "html"
-	case "pdf":
-		renderer = pdfrender.New(opts)
-		contentType = "application/pdf"
-		ext = "pdf"
-	default:
-		http.Error(w, fmt.Sprintf("unknown format %q (want text, html, or pdf)", format), http.StatusBadRequest)
+	f, err := formats.Lookup(format)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", f.ContentType)
 	if download {
 		w.Header().Set("Content-Disposition",
-			fmt.Sprintf(`attachment; filename=%q`, name+"."+ext))
+			fmt.Sprintf(`attachment; filename=%q`, name+"."+f.Ext))
 	}
-	if err := renderer.Render(w, song); err != nil {
+	if err := f.New(render.Options{Transpose: transpose}).Render(w, song); err != nil {
 		// Headers are already written; log and bail.
 		log.Printf("render: %v", err)
 	}

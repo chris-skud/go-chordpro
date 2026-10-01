@@ -12,6 +12,63 @@
   const saveStatus = document.getElementById('save-status');
 
   let transpose = 0;
+
+  // In the static build, songs are rendered in the browser by the Go
+  // renderers compiled to WebAssembly; under `chordpro serve` they're
+  // rendered by the server.
+  const staticMode =
+    document.querySelector('meta[name="chordpro-mode"]')?.content === 'static';
+  let wasmRender = null;
+  const wasmReady = staticMode ? loadWasm() : Promise.resolve();
+
+  async function loadWasm() {
+    try {
+      await loadScript('static/wasm_exec.js');
+      const resp = await fetch('static/chordpro.wasm');
+      const go = new Go();
+      const { instance } = await WebAssembly.instantiate(await resp.arrayBuffer(), go.importObject);
+      go.run(instance); // registers globalThis.chordproRender, then idles
+      wasmRender = globalThis.chordproRender;
+    } catch (e) {
+      console.error('chordpro: failed to load WebAssembly renderer', e);
+    }
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('failed to load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  if (staticMode && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch((e) =>
+      console.error('chordpro: service worker registration failed', e));
+  }
+
+  // renderSong renders the editor's source in the given format ("html",
+  // "text", or "pdf") at the current transposition and resolves to a Blob.
+  // Rejects with the parse/render error message on failure.
+  async function renderSong(format) {
+    if (staticMode) {
+      await wasmReady;
+      if (!wasmRender) throw new Error('The renderer failed to load. Try reloading the page.');
+      const r = wasmRender(source.value, transpose, format);
+      if (r.error) throw new Error(r.error);
+      return new Blob([r.data], { type: r.contentType });
+    }
+    const resp = await fetch(`api/render?format=${format}&transpose=${transpose}`, {
+      method: 'POST',
+      body: source.value,
+      headers: { 'Content-Type': 'text/plain' },
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    return resp.blob();
+  }
+
   let baseName = 'song';
   // FileSystemFileHandle from showOpenFilePicker / showSaveFilePicker, when
   // supported. Lets Save overwrite the original file without a dialog.
@@ -98,19 +155,9 @@
 
   async function renderPreview() {
     try {
-      const resp = await fetch(`/api/render?format=html&transpose=${transpose}`, {
-        method: 'POST',
-        body: source.value,
-        headers: { 'Content-Type': 'text/plain' },
-      });
-      const text = await resp.text();
-      if (!resp.ok) {
-        preview.srcdoc = errorDoc(text);
-        return;
-      }
-      preview.srcdoc = text;
+      preview.srcdoc = await (await renderSong('html')).text();
     } catch (e) {
-      preview.srcdoc = errorDoc(String(e));
+      preview.srcdoc = errorDoc(e.message);
     }
   }
 
@@ -169,29 +216,22 @@
 
   downloadBtn.addEventListener('click', async () => {
     const fmt = formatSel.value;
+    let blob;
     try {
-      const resp = await fetch(
-        `/api/render?format=${fmt}&transpose=${transpose}&download=1&name=${encodeURIComponent(baseName)}`,
-        { method: 'POST', body: source.value, headers: { 'Content-Type': 'text/plain' } },
-      );
-      if (!resp.ok) {
-        const text = await resp.text();
-        alert('Render failed: ' + text);
-        return;
-      }
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const ext = fmt === 'text' ? 'txt' : fmt;
-      a.download = `${baseName}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      blob = await renderSong(fmt);
     } catch (e) {
-      alert('Download failed: ' + e);
+      alert('Render failed: ' + e.message);
+      return;
     }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ext = fmt === 'text' ? 'txt' : fmt;
+    a.download = `${baseName}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 
   // --- Perform mode -------------------------------------------------------
@@ -373,18 +413,9 @@ html.dark p.line .annotation { color: #79c0ff; }
   async function openPerform() {
     let html;
     try {
-      const resp = await fetch(`/api/render?format=html&transpose=${transpose}`, {
-        method: 'POST',
-        body: source.value,
-        headers: { 'Content-Type': 'text/plain' },
-      });
-      html = await resp.text();
-      if (!resp.ok) {
-        alert('Render failed: ' + html);
-        return;
-      }
+      html = await (await renderSong('html')).text();
     } catch (e) {
-      alert('Render failed: ' + e);
+      alert('Render failed: ' + e.message);
       return;
     }
     performBpm.value = sourceTempo();
